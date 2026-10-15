@@ -11,6 +11,8 @@ Put a static website on AWS with one `terraform apply`. You bring the HTML, CSS 
 - security headers (HSTS, nosniff, frame and referrer policy), with an optional Content-Security-Policy
 - a cache clear after every upload, so changes show up right away
 
+**Live demo:** [static-demo.45squared.com](https://static-demo.45squared.com), deployed with this module.
+
 There is no server to patch, nothing to restart, and for a small site the bill is usually under a dollar or two a month (see [Cost](#cost)).
 
 It works with anything that ends up as files in a folder: hand-written HTML, a site generated with ChatGPT, or the build output of an app made in Lovable, Bolt, v0, Vite, Astro or a static Next.js export.
