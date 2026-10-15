@@ -1,0 +1,61 @@
+// CloudFront Function (viewer request): www -> bare domain, your redirects,
+// and clean URLs (/about/ -> /about/index.html, or /index.html in SPA mode).
+// Rendered by Terraform: CONFIG is filled in from the module's variables.
+var CONFIG = ${config};
+
+function qs(querystring) {
+  var parts = [];
+  for (var key in querystring) {
+    var entry = querystring[key];
+    if (entry.multiValue) {
+      for (var i = 0; i < entry.multiValue.length; i++) {
+        parts.push(key + '=' + entry.multiValue[i].value);
+      }
+    } else {
+      parts.push(entry.value === '' ? key : key + '=' + entry.value);
+    }
+  }
+  return parts.length ? '?' + parts.join('&') : '';
+}
+
+function moved(location) {
+  return {
+    statusCode: 301,
+    statusDescription: 'Moved Permanently',
+    headers: { location: { value: location } }
+  };
+}
+
+function handler(event) {
+  var request = event.request;
+  var host = request.headers.host ? request.headers.host.value.toLowerCase() : '';
+  var uri = request.uri;
+
+  if (CONFIG.www && host === 'www.' + CONFIG.domain) {
+    return moved('https://' + CONFIG.domain + uri + qs(request.querystring));
+  }
+
+  var target = CONFIG.redirects[uri];
+  if (target === undefined && uri.length > 1 && uri.charAt(uri.length - 1) === '/') {
+    target = CONFIG.redirects[uri.slice(0, -1)];
+  }
+  if (target !== undefined) {
+    if (target.indexOf('://') === -1) {
+      target = 'https://' + CONFIG.domain + target;
+    }
+    return moved(target);
+  }
+
+  var last = uri.slice(uri.lastIndexOf('/') + 1);
+  if (CONFIG.spa) {
+    // Routes have no extension; files (app.js, logo.png) do and pass through.
+    if (last.indexOf('.') === -1) {
+      request.uri = '/index.html';
+    }
+  } else if (last === '') {
+    request.uri = uri + 'index.html';
+  } else if (last.indexOf('.') === -1) {
+    request.uri = uri + '/index.html';
+  }
+  return request;
+}

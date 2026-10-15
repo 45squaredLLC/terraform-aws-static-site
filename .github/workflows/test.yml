@@ -1,0 +1,25 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false
+      - run: terraform test
+      - run: node --test tests/router.test.mjs
