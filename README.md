@@ -176,7 +176,7 @@ node --test tests/router.test.mjs    # the CloudFront Function: redirects, clean
 
 ## Don't want to run it yourself?
 
-[45Squared](https://45squared.com) builds, hosts and looks after websites for small businesses. If you made a site with an AI builder and want it online, fast and maintained without touching Terraform, [get in touch](https://45squared.com/contact/).
+[45Squared](https://45squared.com/?utm_source=github&utm_medium=readme&utm_campaign=terraform-aws-static-site) builds, hosts and looks after websites for small businesses. If you made a site with an AI builder and want it online, fast and maintained without touching Terraform, [get in touch](https://45squared.com/contact/?utm_source=github&utm_medium=readme&utm_campaign=terraform-aws-static-site).
 
 ## License
 
