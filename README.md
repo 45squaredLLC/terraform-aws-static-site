@@ -13,6 +13,8 @@ Put a static website on AWS with one `terraform apply`. You bring the HTML, CSS 
 
 **Live demo:** [static-demo.45squared.com](https://static-demo.45squared.com), deployed with this module.
 
+**Terraform Registry:** [45squaredLLC/static-site/aws](https://registry.terraform.io/modules/45squaredLLC/static-site/aws)
+
 There is no server to patch, nothing to restart, and for a small site the bill is usually under a dollar or two a month (see [Cost](#cost)).
 
 It works with anything that ends up as files in a folder: hand-written HTML, a site generated with ChatGPT, or the build output of an app made in Lovable, Bolt, v0, Vite, Astro or a static Next.js export.
@@ -33,7 +35,8 @@ provider "aws" {
 }
 
 module "site" {
-  source = "github.com/45squaredLLC/terraform-aws-static-site"
+  source  = "45squaredLLC/static-site/aws"
+  version = "~> 1.0"
 
   domain   = "example.com"
   site_dir = "${path.module}/site" # the folder with your index.html
@@ -67,7 +70,8 @@ npm run build        # writes dist/ (Vite, Lovable, Bolt) or build/ (Create Reac
 
 ```hcl
 module "site" {
-  source = "github.com/45squaredLLC/terraform-aws-static-site"
+  source  = "45squaredLLC/static-site/aws"
+  version = "~> 1.0"
 
   domain   = "example.com"
   site_dir = "${path.module}/../my-app/dist"
