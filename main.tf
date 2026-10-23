@@ -39,14 +39,24 @@ locals {
     webmanifest = "application/manifest+json"
   }
 
-  # Pages are re-checked often. CSS/JS for a day (rebuilt apps rename them anyway),
-  # images, fonts and media for 30 days. The edge keeps pages longer only when we
-  # clear its cache on every upload.
-  page_types  = ["html", "htm", "json", "xml", "txt", "webmanifest", "map"]
-  code_types  = ["css", "js", "mjs", "wasm"]
-  page_cache  = var.invalidate_on_change ? "public, max-age=300, s-maxage=86400" : "public, max-age=300, s-maxage=300"
-  code_cache  = "public, max-age=86400"
-  media_cache = "public, max-age=2592000"
+  # Pages, and CSS/JS with a plain name like style.css, are re-checked by browsers
+  # every 5 minutes, so an edit shows up for returning visitors without a hard
+  # refresh. CSS/JS with a content hash in the name (a Vite/React build's
+  # index-BxK3d9aQ.js, main.8f3a2b1c.css) never change under that name, so they're
+  # cached for a year. Images, fonts and media for 30 days. The edge keeps pages
+  # longer only when we clear its cache on every upload.
+  page_types        = ["html", "htm", "json", "xml", "txt", "webmanifest", "map"]
+  code_types        = ["css", "js", "mjs", "wasm"]
+  page_cache        = var.invalidate_on_change ? "public, max-age=300, s-maxage=86400" : "public, max-age=300, s-maxage=300"
+  fingerprint_cache = "public, max-age=31536000, immutable"
+  media_cache       = "public, max-age=2592000"
+
+  # A name segment of 8+ letters/digits that includes a digit, right before the
+  # extension: "-BxK3d9aQ.js", ".8f3a2b1c.css". Plain names ("style.css",
+  # "bootstrap.min.js") don't match.
+  fingerprinted = {
+    for f in local.files : f => can(regex("[.-][A-Za-z0-9_]*[0-9][A-Za-z0-9_]*\\.[a-z0-9]+$", f)) && try(length(regex("[.-]([A-Za-z0-9_]+)\\.[a-z0-9]+$", f)[0]) >= 8, false)
+  }
 
   file_ext = { for f in local.files : f => lower(reverse(split(".", f))[0]) }
 
@@ -121,7 +131,7 @@ resource "aws_s3_object" "file" {
   content_type = lookup(local.content_types, local.file_ext[each.value], "application/octet-stream")
   cache_control = (
     contains(local.page_types, local.file_ext[each.value]) ? local.page_cache :
-    contains(local.code_types, local.file_ext[each.value]) ? local.code_cache :
+    contains(local.code_types, local.file_ext[each.value]) ? (local.fingerprinted[each.value] ? local.fingerprint_cache : local.page_cache) :
     local.media_cache
   )
   tags = var.tags

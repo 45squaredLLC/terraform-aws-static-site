@@ -86,8 +86,8 @@ run "apex_site_with_www" {
   }
 
   assert {
-    condition     = aws_s3_object.file["style.css"].cache_control == "public, max-age=86400"
-    error_message = "CSS is cached for a day"
+    condition     = aws_s3_object.file["style.css"].cache_control == "public, max-age=300, s-maxage=300"
+    error_message = "plain-named CSS is re-checked by browsers like a page, so edits show up"
   }
 
   assert {
@@ -156,6 +156,11 @@ run "spa_on_a_subdomain" {
   assert {
     condition     = aws_s3_object.file["assets/logo.png"].cache_control == "public, max-age=2592000"
     error_message = "images are cached for 30 days"
+  }
+
+  assert {
+    condition     = aws_s3_object.file["assets/index-BxK3d9aQ.js"].cache_control == "public, max-age=31536000, immutable"
+    error_message = "build assets with a content hash in the name are cached for a year"
   }
 
   assert {

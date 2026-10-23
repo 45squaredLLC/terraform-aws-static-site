@@ -154,8 +154,11 @@ A static host serves files. Anything a builder platform did on its own servers n
 | Files | Browser | CloudFront |
 |---|---|---|
 | HTML, JSON, XML, TXT | 5 minutes | 1 day, cleared on every apply |
-| CSS, JS, WASM | 1 day | 1 day |
+| CSS, JS, WASM with a plain name (`style.css`) | 5 minutes | 1 day, cleared on every apply |
+| CSS, JS, WASM with a content hash in the name (`index-BxK3d9aQ.js`) | 1 year | 1 year |
 | Images, fonts, media | 30 days | 30 days |
+
+Plain-named CSS and JS are treated like pages, so a returning visitor sees a style or script change within 5 minutes without a hard refresh. Build tools (Vite, Create React App, Astro) put a content hash in the file name and change the name when the file changes. Those files never go stale, so they are cached for a year. A hashed name is a segment of 8 or more letters and digits, including at least one digit, right before the extension.
 
 With `invalidate_on_change = false` the edge keeps pages for 5 minutes too, so changes still show up without a cache clear. The invalidation runs `aws cloudfront create-invalidation` on the machine running Terraform with the same credentials, so the AWS CLI must be installed there. The first 1,000 invalidation paths each month are free, and each apply uses one (`/*`).
 
