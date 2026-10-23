@@ -60,7 +60,17 @@ locals {
 
   file_ext = { for f in local.files : f => lower(reverse(split(".", f))[0]) }
 
-  content_hash = sha1(join(",", [for f in local.files : "${f}:${filemd5("${var.site_dir}/${f}")}"]))
+  cache_control = {
+    for f in local.files : f => (
+      contains(local.page_types, local.file_ext[f]) ? local.page_cache :
+      contains(local.code_types, local.file_ext[f]) ? (local.fingerprinted[f] ? local.fingerprint_cache : local.page_cache) :
+      local.media_cache
+    )
+  }
+
+  # Changes to a file's bytes or its cache header both clear the CDN cache, so a
+  # cache-policy change (e.g. a module upgrade) reaches visitors right away.
+  content_hash = sha1(join(",", [for f in local.files : "${f}:${filemd5("${var.site_dir}/${f}")}:${local.cache_control[f]}"]))
 
   # AWS managed CloudFront cache policy "CachingOptimized".
   cache_optimized = "658327ea-f89d-4fab-a63d-7e88639e58f6"
@@ -124,17 +134,13 @@ resource "aws_s3_bucket_policy" "site" {
 resource "aws_s3_object" "file" {
   for_each = local.files
 
-  bucket       = aws_s3_bucket.site.id
-  key          = each.value
-  source       = "${var.site_dir}/${each.value}"
-  source_hash  = filemd5("${var.site_dir}/${each.value}")
-  content_type = lookup(local.content_types, local.file_ext[each.value], "application/octet-stream")
-  cache_control = (
-    contains(local.page_types, local.file_ext[each.value]) ? local.page_cache :
-    contains(local.code_types, local.file_ext[each.value]) ? (local.fingerprinted[each.value] ? local.fingerprint_cache : local.page_cache) :
-    local.media_cache
-  )
-  tags = var.tags
+  bucket        = aws_s3_bucket.site.id
+  key           = each.value
+  source        = "${var.site_dir}/${each.value}"
+  source_hash   = filemd5("${var.site_dir}/${each.value}")
+  content_type  = lookup(local.content_types, local.file_ext[each.value], "application/octet-stream")
+  cache_control = local.cache_control[each.value]
+  tags          = var.tags
 }
 
 # --------------------------------------------------------------------------- #
